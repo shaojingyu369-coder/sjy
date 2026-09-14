@@ -191,12 +191,13 @@ input,textarea,select{font-family:inherit;font-size:16px}
 /* ===== Flashcard ===== */
 .flashcard-container{perspective:1200px;margin:20px 0}
 .flashcard{
-  position:relative;width:100%;min-height:280px;transform-style:preserve-3d;
+  position:relative;width:100%;min-height:280px;display:grid;
+  transform-style:preserve-3d;
   transition:transform .5s cubic-bezier(.4,0,.2,1);cursor:pointer
 }
 .flashcard.flipped{transform:rotateY(180deg)}
 .flashcard-face{
-  position:absolute;inset:0;background:var(--card);border-radius:var(--radius-lg);
+  grid-area:1/1;position:relative;background:var(--card);border-radius:var(--radius-lg);
   border:1px solid var(--border-light);box-shadow:var(--shadow-md);
   padding:28px 24px;display:flex;flex-direction:column;backface-visibility:hidden;
   -webkit-backface-visibility:hidden
@@ -204,7 +205,12 @@ input,textarea,select{font-family:inherit;font-size:16px}
 .flashcard-back{transform:rotateY(180deg)}
 .card-russian{
   font-family:var(--font-serif);font-size:36px;font-weight:600;text-align:center;
-  margin-bottom:12px;color:var(--text);line-height:1.3
+  margin-bottom:12px;color:var(--text);line-height:1.3;
+  overflow-wrap:anywhere;word-break:normal
+}
+@media (max-width:480px){
+  .card-russian{font-size:32px}
+  .flashcard-face{padding:22px 16px}
 }
 .card-russian .stress{color:var(--danger);font-weight:700}
 .card-speak-btn{
@@ -237,7 +243,8 @@ input,textarea,select{font-family:inherit;font-size:16px}
 .test-progress{margin-bottom:20px}
 .test-question-num{font-size:13px;color:var(--text-muted);margin-bottom:8px;font-weight:500}
 .test-card{background:var(--card);border-radius:var(--radius-lg);border:1px solid var(--border-light);box-shadow:var(--shadow-md);padding:28px 24px;margin-bottom:20px;text-align:center}
-.test-word{font-family:var(--font-serif);font-size:32px;font-weight:600;text-align:center;margin-bottom:6px}
+.test-word{font-family:var(--font-serif);font-size:32px;font-weight:600;text-align:center;margin-bottom:6px;overflow-wrap:anywhere;line-height:1.3}
+@media (max-width:480px){.test-word{font-size:26px}}
 .test-word-speak-btn{
   display:inline-flex;align-items:center;gap:7px;margin:6px 0 4px;padding:9px 22px;
   border-radius:22px;cursor:pointer;font-size:15px;font-weight:600;white-space:nowrap;
@@ -5088,7 +5095,11 @@ function renderLearnCard() {
   var w = words[currentWordIndex];
   currentWordLearn = w;
   
-  $('cardRussian').textContent = w.stress || w.ru;
+  var ruText = w.stress || w.ru;
+  var ruEl = $('cardRussian');
+  ruEl.textContent = ruText;
+  var ruLen = ruText.length;
+  ruEl.style.fontSize = ruLen > 44 ? '18px' : ruLen > 34 ? '21px' : ruLen > 24 ? '25px' : ruLen > 16 ? '30px' : '';
   $('cardPos').textContent = w.pos || '';
   $('cardChinese').textContent = w.cn;
   $('cardEnglish').textContent = w.en;
@@ -5307,7 +5318,10 @@ function renderTestQuestion() {
   if (!q) return;
   $('testQuestionNum').textContent = '第 ' + (testCurrentIndex + 1) + ' / ' + TEST_TOTAL + ' 题';
   $('testProgressBar').style.width = ((testCurrentIndex + 1) / TEST_TOTAL * 100) + '%';
-  $('testWord').textContent = q.question;
+  var twEl = $('testWord');
+  twEl.textContent = q.question;
+  var twLen = (q.question || '').length;
+  twEl.style.fontSize = twLen > 44 ? '17px' : twLen > 34 ? '20px' : twLen > 24 ? '23px' : twLen > 16 ? '27px' : '';
   $('testTypeLabel').textContent = q.label;
   
   // 俄语题（俄选中/俄选英）显示俄语语音按钮
@@ -5487,7 +5501,10 @@ function renderReviewQuestion() {
   if (!q) return;
   $('reviewQuestionNum').textContent = '第 ' + (reviewCurrentIndex + 1) + ' / ' + reviewQuestions.length + ' 题';
   $('reviewProgressBar').style.width = ((reviewCurrentIndex + 1) / reviewQuestions.length * 100) + '%';
-  $('reviewWord').textContent = q.question;
+  var rwEl = $('reviewWord');
+  rwEl.textContent = q.question;
+  var rwLen = (q.question || '').length;
+  rwEl.style.fontSize = rwLen > 44 ? '17px' : rwLen > 34 ? '20px' : rwLen > 24 ? '23px' : rwLen > 16 ? '27px' : '';
   
   var optsEl = $('reviewOptions');
   optsEl.innerHTML = '';

@@ -1,5 +1,5 @@
 /* 自动生成，请勿手改；由 tools/build-pwa.js 生成 */
-const CACHE = 'meru-9220e833cc80';
+const CACHE = 'meru-12f4990eddae';
 const CORE = [
   './',
   './index.html',
