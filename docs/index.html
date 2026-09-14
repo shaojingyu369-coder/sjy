@@ -15,6 +15,7 @@
 <link rel="manifest" href="manifest.webmanifest">
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html,body{overflow-x:hidden;max-width:100%}
 :root{
   --bg:#f5efe1;--bg2:#faf6ec;--card:#ffffff;--text:#2a2018;--text-muted:#7a6b5a;
   --primary:#b8702e;--primary-light:#d4956a;--primary-dark:#8a5220;--primary-bg:#fdf4e8;
@@ -51,18 +52,26 @@ input,textarea,select{font-family:inherit;font-size:16px}
   backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);
   border-bottom:1px solid var(--border-light);
 }
-.nav-inner{max-width:900px;margin:0 auto;padding:0 12px;display:flex;align-items:center;gap:8px;height:56px}
-.nav-brand{font-weight:700;font-size:17px;color:var(--primary);display:flex;align-items:center;gap:6px;white-space:nowrap}
-.nav-brand-icon{width:28px;height:28px;background:var(--primary);color:white;border-radius:8px;display:inline-flex;align-items:center;justify-content:center;font-family:var(--font-serif);font-size:18px;font-weight:700}
-.nav-tabs{flex:1;min-width:0;display:flex;gap:2px;overflow-x:auto;scrollbar-width:none;-ms-overflow-style:none;justify-content:flex-end}
+.nav-inner{max-width:900px;margin:0 auto;padding:6px 12px;display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+.nav-brand{order:1;font-weight:700;font-size:16px;color:var(--primary);display:flex;align-items:center;gap:6px;white-space:nowrap}
+.nav-brand-icon{width:26px;height:26px;background:var(--primary);color:white;border-radius:8px;display:inline-flex;align-items:center;justify-content:center;font-family:var(--font-serif);font-size:17px;font-weight:700}
+.nav-tabs{order:3;flex:1 1 100%;min-width:0;display:flex;gap:4px;flex-wrap:wrap;justify-content:center;overflow:visible}
 .nav-tabs::-webkit-scrollbar{display:none}
 .nav-tab{
-  padding:8px 12px;font-size:13px;color:var(--text-muted);border-radius:var(--radius-sm);
-  white-space:nowrap;transition:all .2s;display:flex;align-items:center;gap:4px;min-height:44px
+  padding:6px 11px;font-size:12.5px;color:var(--text-muted);border-radius:var(--radius-sm);
+  white-space:nowrap;transition:all .2s;display:flex;align-items:center;gap:4px;min-height:34px
+}
+@media (min-width:768px){
+  .nav-inner{height:56px;padding:0 12px;flex-wrap:nowrap;gap:8px}
+  .nav-brand{order:0;font-size:17px}
+  .nav-brand-icon{width:28px;height:28px;font-size:18px}
+  .nav-tabs{order:0;flex:1;flex-wrap:nowrap;overflow-x:auto;justify-content:flex-end}
+  .nav-tab{padding:8px 12px;font-size:13px;min-height:44px}
 }
 .nav-tab:hover{background:var(--accent);color:var(--text)}
 .nav-tab.active{background:var(--primary-bg);color:var(--primary);font-weight:600}
-.nav-user{position:relative}
+.nav-user{position:relative;order:2;margin-left:auto}
+@media (min-width:768px){.nav-user{order:0}}
 .nav-user-btn{display:flex;align-items:center;gap:6px;padding:6px 10px;border-radius:var(--radius-sm);min-height:44px}
 .nav-user-btn:hover{background:var(--accent)}
 .nav-user-avatar{width:28px;height:28px;border-radius:50%;background:var(--primary);color:white;display:inline-flex;align-items:center;justify-content:center;font-size:13px;font-weight:600}
@@ -674,9 +683,7 @@ input,textarea,select{font-family:inherit;font-size:16px}
         </button>
         <div class="nav-user-menu" id="userMenu">
           <div class="nav-user-item" onclick="showPage('settings');toggleUserMenu()">设置与同步</div>
-          <div class="nav-user-item" onclick="showChangePassword()">修改密码</div>
           <div class="nav-user-item" onclick="showAbout()">关于</div>
-          <div class="nav-user-item danger" onclick="doLogout()">退出登录</div>
         </div>
       </div>
     </div>
@@ -1150,17 +1157,16 @@ input,textarea,select{font-family:inherit;font-size:16px}
       </div>
 
       <div class="card">
-        <div class="card-title">👤 账户信息</div>
+        <div class="card-title">👤 本机信息</div>
         <div class="settings-item">
           <div>
-            <div class="settings-label">用户名</div>
+            <div class="settings-label">本机账户</div>
             <div class="settings-desc" id="settingsUsername">-</div>
           </div>
-          <button class="btn btn-outline btn-sm" onclick="showChangePassword()">修改密码</button>
         </div>
         <div class="settings-item">
           <div>
-            <div class="settings-label">注册时间</div>
+            <div class="settings-label">使用起始时间</div>
             <div class="settings-desc" id="settingsRegisterTime">-</div>
           </div>
         </div>
@@ -1290,7 +1296,7 @@ input,textarea,select{font-family:inherit;font-size:16px}
       </div>
 
       <div style="text-align:center;margin-top:24px">
-        <button class="btn btn-danger" onclick="doLogout()">退出登录</button>
+        <button class="btn btn-danger" onclick="resetLocalData()">清空本机学习数据</button>
       </div>
     </div>
 
@@ -4822,6 +4828,39 @@ function updateLocalAccountHint() {
     : '本机还没有账户，点「注册」或用上面的按钮直接开始';
 }
 
+// 无需注册：优先进入本机已有账户，否则自动创建默认本机账户
+function autoLocalLogin() {
+  var users = getUsers();
+  var name = '本机用户';
+  var pass = 'local-guest-2024';
+  if (users.length > 0 && users.indexOf(name) === -1) {
+    // 兼容此前已注册的账户，直接进入，避免学习数据丢失
+    currentUser = users[0];
+    loadUserData();
+    try {
+      localStorage.setItem(SESSION_KEY, JSON.stringify({
+        username: users[0], loginTime: Date.now(), expire: Date.now() + 3650 * 24 * 3600 * 1000
+      }));
+    } catch (e) {}
+    return true;
+  }
+  if (users.indexOf(name) === -1) registerUser(name, pass);
+  var r = loginUser(name, pass, true);
+  return !!(r && r.ok);
+}
+
+// 清空本机学习数据（生词本 / 进度 / 记录），保留词库
+function resetLocalData() {
+  if (!userData) return;
+  if (!window.confirm('确定清空本机全部学习数据吗？（生词本、学习进度、测试记录）此操作不可恢复。')) return;
+  try { localStorage.removeItem('meru_progress_' + currentUser); } catch (e) {}
+  loadUserData();
+  if (typeof refreshHome === 'function') refreshHome();
+  if (typeof refreshNotebook === 'function') refreshNotebook();
+  if (typeof refreshSettings === 'function') refreshSettings();
+  showToast('已清空本机学习数据', 'success');
+}
+
 function showUserSwitch() {
   var list = $('userSwitchList');
   var users = getUsers();
@@ -6541,18 +6580,9 @@ function init() {
   // 初始化切换按钮状态
   setTimeout(updateToggleSlider, 100);
   
-  // 检查登录状态
-  if (checkLogin()) {
-    showApp();
-  } else {
-    // 检查是否有已注册用户
-    var users = getUsers();
-    if (users.length === 0) {
-      // 没有用户，显示注册页
-      switchLoginTab('register');
-    }
-    $('loginScreen').style.display = 'flex';
-  }
+  // 无需注册：直接进入本机账户
+  if (!checkLogin()) autoLocalLogin();
+  showApp();
   
   // 回车键登录
   $('loginPassword')?.addEventListener('keypress', function(e) {
