@@ -298,6 +298,9 @@ input,textarea,select{font-family:inherit;font-size:16px}
 .word-main{flex:1;min-width:0}
 .word-ru{font-family:var(--font-serif);font-size:16px;font-weight:600;color:var(--text)}
 .word-ru .stress{color:var(--danger)}
+/* 重音：用 CSS 绘制，避免 iOS 组合符字体回退产生空隙 */
+.acc{position:relative}
+.acc::after{content:'';position:absolute;left:50%;bottom:0.66em;width:0.48em;height:0.1em;background:currentColor;border-radius:2px;transform:translateX(-50%) rotate(-20deg)}
 .word-cn{font-size:13px;color:var(--text-muted);margin-top:2px}
 .word-actions{display:flex;gap:4px;flex-shrink:0}
 .icon-btn{
@@ -5088,6 +5091,23 @@ function getLevelWords(level) {
   return VOCAB_BY_LEVEL[level] || [];
 }
 
+// 把组合重音符 U+0301 转成 CSS 绘制的重音，彻底避开 iOS 字体回退
+function stressToHtml(s) {
+  if (!s) return '';
+  var out = '';
+  for (var i = 0; i < s.length; i++) {
+    var code = s.charCodeAt(i);
+    if (code === 0x0301) continue;
+    if (s.charCodeAt(i + 1) === 0x0301) {
+      out += '<span class="acc">' + escapeHtmlText(s.charAt(i)) + '</span>';
+      i++;
+    } else {
+      out += escapeHtmlText(s.charAt(i));
+    }
+  }
+  return out;
+}
+
 function renderLearnCard() {
   var words = getLevelWords(currentLevel);
   if (words.length === 0) return;
@@ -5097,13 +5117,13 @@ function renderLearnCard() {
   
   var ruText = w.stress || w.ru;
   var ruEl = $('cardRussian');
-  ruEl.textContent = ruText;
+  ruEl.innerHTML = stressToHtml(ruText);
   var ruLen = ruText.length;
   ruEl.style.fontSize = ruLen > 44 ? '18px' : ruLen > 34 ? '21px' : ruLen > 24 ? '25px' : ruLen > 16 ? '30px' : '';
   $('cardPos').textContent = w.pos || '';
   $('cardChinese').textContent = w.cn;
   $('cardEnglish').textContent = w.en;
-  $('cardExRu').textContent = w.exRu || '';
+  $('cardExRu').innerHTML = stressToHtml(w.exRu || '');
   $('cardExCn').textContent = w.exCn || '';
   $('cardExEn').textContent = w.exEn || '';
   
@@ -5319,7 +5339,7 @@ function renderTestQuestion() {
   $('testQuestionNum').textContent = '第 ' + (testCurrentIndex + 1) + ' / ' + TEST_TOTAL + ' 题';
   $('testProgressBar').style.width = ((testCurrentIndex + 1) / TEST_TOTAL * 100) + '%';
   var twEl = $('testWord');
-  twEl.textContent = q.question;
+  twEl.innerHTML = stressToHtml(q.question);
   var twLen = (q.question || '').length;
   twEl.style.fontSize = twLen > 44 ? '17px' : twLen > 34 ? '20px' : twLen > 24 ? '23px' : twLen > 16 ? '27px' : '';
   $('testTypeLabel').textContent = q.label;
@@ -5502,7 +5522,7 @@ function renderReviewQuestion() {
   $('reviewQuestionNum').textContent = '第 ' + (reviewCurrentIndex + 1) + ' / ' + reviewQuestions.length + ' 题';
   $('reviewProgressBar').style.width = ((reviewCurrentIndex + 1) / reviewQuestions.length * 100) + '%';
   var rwEl = $('reviewWord');
-  rwEl.textContent = q.question;
+  rwEl.innerHTML = stressToHtml(q.question);
   var rwLen = (q.question || '').length;
   rwEl.style.fontSize = rwLen > 44 ? '17px' : rwLen > 34 ? '20px' : rwLen > 24 ? '23px' : rwLen > 16 ? '27px' : '';
   
@@ -5658,7 +5678,7 @@ function renderNotebookWords() {
     
     var item = document.createElement('div');
     item.className = 'word-item';
-    item.innerHTML = '<div class="word-info"><div class="word-russian">' + (w.stress || w.ru) + '</div><div class="word-chinese">' + w.cn + '</div><div class="word-english">' + w.en + '</div></div><div class="word-meta"><span class="status-dot ' + statusClass + '"></span>' + statusText + '</div><div class="word-actions"><button class="icon-btn" onclick="speakNotebookWord(\'' + w.id + '\')" title="朗读"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/></svg></button><button class="icon-btn" onclick="removeFromNotebook(\'' + w.id + '\')" title="移除"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg></button></div>';
+    item.innerHTML = '<div class="word-info"><div class="word-russian">' + stressToHtml(w.stress || w.ru) + '</div><div class="word-chinese">' + w.cn + '</div><div class="word-english">' + w.en + '</div></div><div class="word-meta"><span class="status-dot ' + statusClass + '"></span>' + statusText + '</div><div class="word-actions"><button class="icon-btn" onclick="speakNotebookWord(\'' + w.id + '\')" title="朗读"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/></svg></button><button class="icon-btn" onclick="removeFromNotebook(\'' + w.id + '\')" title="移除"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg></button></div>';
     listEl.appendChild(item);
   });
   
@@ -5921,7 +5941,7 @@ function renderImportMatches() {
     var item = document.createElement('div');
     item.className = 'match-item';
     item.innerHTML = '<div style="flex:1;min-width:0">' +
-      '<div class="match-ru">' + escapeHtmlText(w.stress || w.ru) + ' ' + badges + '</div>' +
+      '<div class="match-ru">' + stressToHtml(w.stress || w.ru) + ' ' + badges + '</div>' +
       '<div class="match-cn">' + escapeHtmlText(w.cn || '') + ' · ' + escapeHtmlText(w.en || '') + '</div>' +
       '<div class="match-forms">原文：' + importFormText(m) + (m.match === 'exact' ? '（原形）' : '') + '</div>' +
       '</div>' +
@@ -6172,7 +6192,7 @@ function processOCRResult(text) {
     var w = m.entry;
     var item = document.createElement('div');
     item.className = 'match-item';
-    item.innerHTML = '<div style="flex:1;min-width:0"><div class="match-ru">' + escapeHtmlText(w.stress || w.ru) + (m.kind === 'phrase' ? ' <span class="mini-badge mini-badge-phrase">短语</span>' : '') + '</div><div class="match-cn">' + escapeHtmlText(w.cn || '') + ' · ' + escapeHtmlText(w.en || '') + '</div></div><button class="btn btn-outline btn-sm" onclick="addOcrWordToNotebook(\'' + escapeHtmlAttr(w.id) + '\')">添加</button>';
+    item.innerHTML = '<div style="flex:1;min-width:0"><div class="match-ru">' + stressToHtml(w.stress || w.ru) + (m.kind === 'phrase' ? ' <span class="mini-badge mini-badge-phrase">短语</span>' : '') + '</div><div class="match-cn">' + escapeHtmlText(w.cn || '') + ' · ' + escapeHtmlText(w.en || '') + '</div></div><button class="btn btn-outline btn-sm" onclick="addOcrWordToNotebook(\'' + escapeHtmlAttr(w.id) + '\')">添加</button>';
     listEl.appendChild(item);
   });
 
