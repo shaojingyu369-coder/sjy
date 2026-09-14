@@ -601,7 +601,7 @@ input,textarea,select{font-family:inherit;font-size:16px}
     <div id="loginForm">
       <div class="form-group">
         <label class="form-label">用户名</label>
-        <input type="text" class="form-input" id="loginUsername" placeholder="输入用户名" autocomplete="username">
+        <input type="text" class="form-input" id="loginUsername" placeholder="输入用户名" autocomplete="username" autocapitalize="off" autocorrect="off" spellcheck="false">
       </div>
       <div class="form-group">
         <label class="form-label">密码</label>
@@ -623,7 +623,7 @@ input,textarea,select{font-family:inherit;font-size:16px}
     <div id="registerForm" style="display:none">
       <div class="form-group">
         <label class="form-label">用户名</label>
-        <input type="text" class="form-input" id="regUsername" placeholder="设置用户名（3-20字符）">
+        <input type="text" class="form-input" id="regUsername" placeholder="设置用户名（3-20字符）" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false">
       </div>
       <div class="form-group">
         <label class="form-label">密码</label>
@@ -639,6 +639,11 @@ input,textarea,select{font-family:inherit;font-size:16px}
       <div class="login-footer">
         已有账户？<button class="btn-text" onclick="switchLoginTab('login')">立即登录</button>
       </div>
+    </div>
+
+    <div style="margin-top:14px;padding-top:14px;border-top:1px dashed var(--border)">
+      <button class="btn btn-outline btn-block" onclick="enterGuestMode()">先不注册，直接开始学习</button>
+      <p id="localAccountHint" style="font-size:11px;color:var(--text-muted);text-align:center;margin-top:8px;line-height:1.6"></p>
     </div>
   </div>
 </div>
@@ -4746,6 +4751,7 @@ function switchLoginTab(tab) {
     $('registerForm').style.display = 'block';
     $('loginForm').style.display = 'none';
   }
+  updateLocalAccountHint();
 }
 
 function doLogin() {
@@ -4755,11 +4761,22 @@ function doLogin() {
   if (!username) { showToast('请输入用户名', 'error'); return; }
   if (!password) { showToast('请输入密码', 'error'); return; }
   var result = loginUser(username, password, remember);
+  // 用户名大小写不一致时，自动匹配本机已注册的账户
+  if (!result.ok && result.msg === '用户不存在') {
+    var users = getUsers();
+    var lower = username.toLowerCase();
+    for (var i = 0; i < users.length; i++) {
+      if (users[i].toLowerCase() === lower) { result = loginUser(users[i], password, remember); break; }
+    }
+  }
   if (result.ok) {
     showToast('登录成功', 'success');
     showApp();
   } else {
-    showToast(result.msg, 'error');
+    var msg = (result.msg === '用户不存在')
+      ? '本机没有这个账户。提示：Safari 与「主屏幕图标」的账号是分开保存的，请在同一入口注册并登录'
+      : result.msg;
+    showToast(msg, 'error');
   }
 }
 
@@ -4781,6 +4798,28 @@ function doRegister() {
   } else {
     showToast(result.msg, 'error');
   }
+}
+
+function enterGuestMode() {
+  var name = '本机用户';
+  var pass = 'local-guest-2024';
+  if (getUsers().indexOf(name) === -1) registerUser(name, pass);
+  var result = loginUser(name, pass, true);
+  if (result.ok) {
+    showToast('已进入本机模式，数据保存在这台设备', 'success');
+    showApp();
+  } else {
+    showToast(result.msg, 'error');
+  }
+}
+
+function updateLocalAccountHint() {
+  var el = $('localAccountHint');
+  if (!el) return;
+  var users = getUsers();
+  el.textContent = users.length
+    ? '本机已注册 ' + users.length + ' 个账户：' + users.join('、')
+    : '本机还没有账户，点「注册」或用上面的按钮直接开始';
 }
 
 function showUserSwitch() {
